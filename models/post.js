@@ -19,6 +19,11 @@ const postSchema = new Schema(
       type: Object,
       required: String,
     },
+    isPostMark: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
   },
   { timestamps: true }
 );
