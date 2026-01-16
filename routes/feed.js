@@ -6,7 +6,7 @@ const feedController = require("../controllers/feed");
 const router = express();
 
 // GET  /feed
-router.get("/posts", feedController.getPost);
+router.get("/posts", feedController.getPosts);
 
 //POST /feed/post
 router.post(
@@ -31,7 +31,13 @@ router.put(
   feedController.updatePost
 );
 
+//PATCH Post Mark By ID
+router.patch("/posts/update-mark", feedController.updatePostMark);
+
 //DELETE by ID
 router.delete("/post/:postId", feedController.deletPost);
+
+// DELETE by Many IDS
+router.delete("/posts", feedController.deleteManyPosts);
 
 module.exports = router;

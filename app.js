@@ -9,6 +9,7 @@ const MONGODB_URI =
   "mongodb+srv://kshirsagarm773_db_user:mL6ouCSOffjsLZRw@cluster0.mfotn3y.mongodb.net/BlogPost?appName=Cluster0";
 
 const feedRoutes = require("./routes/feed");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use(bodyParser.json());
 app.use(
   multer({ storage: fileStorage, fileFilter: fileFiler }).single("image")
 );
+
 app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use((req, res, next) => {
@@ -52,6 +54,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/feed", feedRoutes);
+app.use("/auth", authRoutes);
 
 app.use((error, req, res, next) => {
   const status = (error.statusCode = 500);

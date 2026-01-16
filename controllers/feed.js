@@ -5,18 +5,32 @@ const { check, validationResult } = require("express-validator");
 const Post = require("../models/post");
 
 //GET ALL POST
-exports.getPost = (req, res, next) => {
+exports.getPosts = (req, res, next) => {
+  const currentPage = req.query.page || 1;
+  const perPage = 1;
+  let totalItems;
+
   Post.find()
+    .countDocuments()
+    .then((count) => {
+      console.log("Count===>", count);
+      totalItems = count;
+      return Post.find()
+        .skip((currentPage - 1) * perPage)
+        .limit(perPage);
+    })
     .then((posts) => {
       res.status(200).json({
         message: "Posts Fetched successfully",
         posts: posts,
+        totalItems: totalItems,
       });
     })
     .catch((err) => {
-      const error = new Error(err);
-      error.httpStatusCode = 500;
-      return next(error);
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
     });
 };
 
@@ -47,6 +61,7 @@ exports.createPost = (req, res, next) => {
     creator: {
       name: "MK",
     },
+    isPostMark: false,
   });
 
   post
@@ -142,6 +157,34 @@ exports.updatePost = (req, res, next) => {
     });
 };
 
+// UPDATE Post Mark by ID
+exports.updatePostMark = (req, res, next) => {
+  const { postIds, isPostMark } = req.body;
+
+  if (!Array.isArray(postIds) || postIds.length === 0) {
+    return res.status(400).json({ message: "Post ID must send in an array" });
+  }
+
+  if (typeof isPostMark !== "boolean") {
+    return res.status(400).json({
+      message: "isPostMark must be boolean (true/false)",
+    });
+  }
+
+  Post.updateMany({ _id: { $in: postIds } }, { $set: { isPostMark } })
+    .then((result) => {
+      res.status(201).json({
+        message: "Post Marked Successfully",
+      });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
 //DELETE POST BY ID
 exports.deletPost = (req, res, next) => {
   const postId = req.params.postId;
@@ -167,6 +210,40 @@ exports.deletPost = (req, res, next) => {
     });
 };
 
+//DELETE POST by IDS Array
+exports.deleteManyPosts = (req, res, next) => {
+  const postIds = req.body.postIds;
+
+  if (!Array.isArray(postIds) || postIds.length === 0) {
+    return res.status(400).json({ message: "Post ID must send in an array" });
+  }
+
+  Post.find({ _id: { $in: postIds } })
+    .then((posts) => {
+      console.log("===>", posts);
+      posts.forEach((post) => {
+        if (!post) {
+          const error = new Error("Could not find post..");
+          error.statusCode = 404;
+          throw error;
+        }
+        clearImage(post.imageUrl);
+      });
+
+      return Post.deleteMany({ _id: { $in: postIds } });
+    })
+    .then((result) => {
+      res.status(200).json({ message: "Posts Delete Successfully!" });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+//Clear Images
 const clearImage = (filePath) => {
   filePath = path.join(__dirname, "..", filePath);
   fs.unlink(filePath, (err) => console.log(err));
